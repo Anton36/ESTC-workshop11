@@ -26,7 +26,7 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
  * WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE
-*/
+ */
 
 #include "estc_service.h"
 
@@ -68,46 +68,40 @@ ret_code_t estc_ble_service_init(ble_estc_service_t *service)
 static ret_code_t estc_ble_add_characteristics(ble_estc_service_t *service)
 {
     ret_code_t error_code = NRF_SUCCESS;
-   
 
-    
+    ble_add_char_user_desc_t add_char_user_desc = {0};
+    ble_add_char_params_t add_char_params = {0};
 
+    const char char1_descriptor[] = "characteristics 1 test descriptor";
 
-    
-    ble_gatts_char_md_t char_md = { 0 };
-    char_md.char_props.read = 1;
-    char_md.char_props.write = 1;
+    add_char_user_desc.max_size = sizeof(char1_descriptor);
+    add_char_user_desc.size = sizeof(char1_descriptor);
+    add_char_user_desc.p_char_user_desc = (uint8_t *)char1_descriptor;
+    add_char_user_desc.char_props.read = 1;
+    add_char_user_desc.read_access = SEC_OPEN;
 
+    ble_gatts_char_pf_t char_pf = {0};
+    char_pf.format = BLE_GATT_CPF_FORMAT_UINT16;
+    char_pf.name_space = BLE_GATT_CPF_NAMESPACE_BTSIG;
+    char_pf.unit = 0x2700;
 
-    
-    ble_gatts_attr_md_t attr_md = { 0 };
-    attr_md.vloc = BLE_GATTS_VLOC_STACK;
-
-
-   
-    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&attr_md.read_perm);
-    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&attr_md.write_perm);
-    
-
-
-    
-    ble_gatts_attr_t attr_char_value = { 0 };
     ble_uuid_t characteristic1_uuid;
     characteristic1_uuid.uuid = (uint16_t)ESTC_GATT_CHAR_1_UUID;
-    characteristic1_uuid.type = BLE_UUID_TYPE_VENDOR_BEGIN;
-    
-    attr_char_value.p_uuid= &characteristic1_uuid;
-    attr_char_value.p_attr_md = &attr_md;
+    characteristic1_uuid.type = BLE_UUID_TYPE_BLE;
 
+    add_char_params.uuid = characteristic1_uuid.uuid;
+    add_char_params.uuid_type = characteristic1_uuid.type;
+    add_char_params.max_len = sizeof(uint16_t);
+    add_char_params.init_len = sizeof(uint16_t);
+    add_char_params.char_props.read = 1;
+    add_char_params.char_props.write = 1;
+    add_char_params.read_access = SEC_OPEN;
+    add_char_params.write_access = SEC_OPEN;
+    add_char_params.p_user_descr = &add_char_user_desc;
+    add_char_params.p_presentation_format = &char_pf;
 
-    
-    attr_char_value.max_len = 3;
-    attr_char_value.init_len = 0;
-    attr_char_value.init_offs = 0;
+    error_code = characteristic_add(estc_service.service_handle, &add_char_params, &estc_service.characteristic_handle);
 
-
-    
-    error_code = sd_ble_gatts_characteristic_add(estc_service.service_handle,&char_md,&attr_char_value,&estc_service.characteristic_handle);
     APP_ERROR_CHECK(error_code);
 
     return NRF_SUCCESS;

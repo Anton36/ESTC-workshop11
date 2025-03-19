@@ -42,6 +42,10 @@
 
 #define ESTC_GATT_CHAR_1_UUID 0x3001
 
+
+
+
+
 typedef struct
 {
     uint16_t service_handle;
