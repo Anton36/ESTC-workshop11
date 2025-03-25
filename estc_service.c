@@ -71,38 +71,78 @@ static ret_code_t estc_ble_add_characteristics(ble_estc_service_t *service)
 
     ble_add_char_user_desc_t add_char_user_desc = {0};
     ble_add_char_params_t add_char_params = {0};
+   
 
-    const char char1_descriptor[] = "characteristics 1 test descriptor";
+    const char char1_descriptor[] = "characteristics 1 with  notifications support";
+    const char char2_descriptor[] = "characteristics 2 with indications support";
 
-    add_char_user_desc.max_size = sizeof(char1_descriptor);
-    add_char_user_desc.size = sizeof(char1_descriptor);
-    add_char_user_desc.p_char_user_desc = (uint8_t *)char1_descriptor;
-    add_char_user_desc.char_props.read = 1;
-    add_char_user_desc.read_access = SEC_OPEN;
+    
 
-    ble_gatts_char_pf_t char_pf = {0};
-    char_pf.format = BLE_GATT_CPF_FORMAT_UINT16;
-    char_pf.name_space = BLE_GATT_CPF_NAMESPACE_BTSIG;
-    char_pf.unit = 0x2700;
+    ble_gatts_char_pf_t char_uint16_pf = {0};
+    char_uint16_pf.format = BLE_GATT_CPF_FORMAT_UINT16;
+    char_uint16_pf.name_space = BLE_GATT_CPF_NAMESPACE_BTSIG;
+    char_uint16_pf.unit = 0x2700;
+
+    ble_gatts_char_pf_t char_uint8_pf = {0};
+    char_uint8_pf.format = BLE_GATT_CPF_FORMAT_UINT8;
+    char_uint8_pf.name_space = BLE_GATT_CPF_NAMESPACE_BTSIG;
+    char_uint8_pf.unit = 0x2700;
 
     ble_uuid_t characteristic1_uuid;
     characteristic1_uuid.uuid = (uint16_t)ESTC_GATT_CHAR_1_UUID;
     characteristic1_uuid.type = BLE_UUID_TYPE_BLE;
 
+    ble_uuid_t characteristic2_uuid;
+    characteristic2_uuid.uuid = (uint16_t)ESTC_GATT_CHAR_2_UUID;
+    characteristic2_uuid.type = BLE_UUID_TYPE_BLE;
+    
+    
+    add_char_user_desc.max_size = sizeof(char1_descriptor);
+    add_char_user_desc.size = sizeof(char1_descriptor);
+    add_char_user_desc.p_char_user_desc = (uint8_t *)char1_descriptor;
+    add_char_user_desc.char_props.read = 1;
+    add_char_user_desc.read_access = SEC_OPEN;
+    add_char_user_desc.is_value_user = 0;
+
+
     add_char_params.uuid = characteristic1_uuid.uuid;
     add_char_params.uuid_type = characteristic1_uuid.type;
     add_char_params.max_len = sizeof(uint16_t);
     add_char_params.init_len = sizeof(uint16_t);
-    add_char_params.char_props.read = 1;
-    add_char_params.char_props.write = 1;
-    add_char_params.read_access = SEC_OPEN;
-    add_char_params.write_access = SEC_OPEN;
+    add_char_params.char_props.notify = 1;
+    add_char_params.cccd_write_access = SEC_OPEN;
     add_char_params.p_user_descr = &add_char_user_desc;
-    add_char_params.p_presentation_format = &char_pf;
+    add_char_params.p_presentation_format = &char_uint16_pf;
 
-    error_code = characteristic_add(estc_service.service_handle, &add_char_params, &estc_service.characteristic_handle);
+    
+
+    error_code = characteristic_add(estc_service.service_handle, &add_char_params, &estc_service.characteristic1_handle);
+    memset(&add_char_params,0,sizeof(add_char_params));
+    memset(&add_char_user_desc,0,sizeof(add_char_user_desc));
+
+
+
+    add_char_user_desc.max_size = sizeof(char2_descriptor);
+    add_char_user_desc.size = sizeof(char2_descriptor);
+    add_char_user_desc.p_char_user_desc = (uint8_t *)char2_descriptor;
+    add_char_user_desc.char_props.read = 1;
+    add_char_user_desc.read_access = SEC_OPEN;
+    add_char_user_desc.is_value_user = 0;
+
+
+    add_char_params.uuid = characteristic2_uuid.uuid;
+    add_char_params.uuid_type = characteristic2_uuid.type;
+    add_char_params.max_len = sizeof(uint8_t);
+    add_char_params.init_len = sizeof(uint8_t);
+    add_char_params.char_props.indicate = 1;
+    add_char_params.cccd_write_access = SEC_OPEN;
+    add_char_params.p_user_descr = &add_char_user_desc;
+    add_char_params.p_presentation_format = &char_uint8_pf;
+
+    error_code = characteristic_add(estc_service.service_handle, &add_char_params, &estc_service.characteristic2_handle);
 
     APP_ERROR_CHECK(error_code);
 
     return NRF_SUCCESS;
 }
+

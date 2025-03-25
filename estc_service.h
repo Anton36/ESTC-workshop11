@@ -42,6 +42,8 @@
 
 #define ESTC_GATT_CHAR_1_UUID 0x3001
 
+#define ESTC_GATT_CHAR_2_UUID 0x3002
+
 
 
 
@@ -50,7 +52,8 @@ typedef struct
 {
     uint16_t service_handle;
     uint16_t connection_handle;
-    ble_gatts_char_handles_t characteristic_handle;
+    ble_gatts_char_handles_t characteristic1_handle;
+    ble_gatts_char_handles_t characteristic2_handle;
 
     
 } ble_estc_service_t;

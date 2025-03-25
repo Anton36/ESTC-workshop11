@@ -99,11 +99,17 @@
 #define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(30000)                  /**< Time between each call to sd_ble_gap_conn_param_update after the first call (30 seconds). */
 #define MAX_CONN_PARAMS_UPDATE_COUNT    3                                       /**< Number of attempts before giving up the connection parameter negotiation. */
 
+#define NOTIFICATION_TIMER_DELAY 3000
+#define INDICATION_TIMER_DELAY 6000
+
 #define DEAD_BEEF                       0xDEADBEEF                              /**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
 
 NRF_BLE_GATT_DEF(m_gatt);                                                       /**< GATT module instance. */
 NRF_BLE_QWR_DEF(m_qwr);                                                         /**< Context for the Queued Write module.*/
 BLE_ADVERTISING_DEF(m_advertising);                                             /**< Advertising module instance. */
+
+APP_TIMER_DEF(notification_timer_repeat);
+APP_TIMER_DEF(indication_timer_repeat);
 
 static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                        /**< Handle of the current connection. */
 
@@ -116,6 +122,11 @@ static ble_uuid_t m_adv_uuids[] =                                               
 ble_estc_service_t m_estc_service; /**< ESTC example BLE service */
 
 static void advertising_start(void);
+
+void notification_timer_handler(void *p_context);
+void indication_timer_handler(void *p_context);
+
+
 
 
 /**@brief Callback function for asserts in the SoftDevice.
@@ -143,6 +154,25 @@ static void timers_init(void)
     // Initialize timer module.
     ret_code_t err_code = app_timer_init();
     APP_ERROR_CHECK(err_code);
+
+    app_timer_create(&notification_timer_repeat,
+        APP_TIMER_MODE_REPEATED,
+        notification_timer_handler);
+    app_timer_create(&indication_timer_repeat,
+        APP_TIMER_MODE_REPEATED,
+        indication_timer_handler); 
+}
+
+void notification_timer_handler(void *p_context)
+{
+    NRF_LOG_INFO("notification ");
+
+}
+
+void indication_timer_handler(void *p_context)
+{
+    NRF_LOG_INFO("indication ");
+
 }
 
 
@@ -277,6 +307,9 @@ static void conn_params_init(void)
  */
 static void application_timers_start(void)
 {
+    app_timer_start(notification_timer_repeat, APP_TIMER_TICKS(NOTIFICATION_TIMER_DELAY), NULL);
+
+    app_timer_start(indication_timer_repeat, APP_TIMER_TICKS(INDICATION_TIMER_DELAY), NULL);
 }
 
 
