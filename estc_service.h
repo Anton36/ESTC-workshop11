@@ -32,6 +32,7 @@
 #define ESTC_SERVICE_H__
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "ble.h"
 #include "sdk_errors.h"
@@ -56,6 +57,8 @@ typedef struct
     ble_gatts_char_handles_t characteristic2_handle;
     uint16_t  characteristic1_value;
     uint8_t  characteristic2_value;
+    bool is_notification_enabled;
+    bool is_indication_enabled;
 
     
 } ble_estc_service_t;

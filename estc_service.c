@@ -113,6 +113,8 @@ static ret_code_t estc_ble_add_characteristics(ble_estc_service_t *service)
     add_char_params.char_props.write = 1;
     add_char_params.char_props.notify = 1;
     add_char_params.cccd_write_access = SEC_OPEN;
+    add_char_params.read_access = 1;
+    add_char_params.write_access = 1;
     add_char_params.p_user_descr = &add_char_user_desc;
     add_char_params.p_presentation_format = &char_uint16_pf;
 
@@ -139,6 +141,8 @@ static ret_code_t estc_ble_add_characteristics(ble_estc_service_t *service)
     add_char_params.char_props.read = 1;
     add_char_params.char_props.write = 1;
     add_char_params.char_props.indicate = 1;
+    add_char_params.read_access = 1;
+    add_char_params.write_access = 1;
     add_char_params.cccd_write_access = SEC_OPEN;
     add_char_params.p_user_descr = &add_char_user_desc;
     add_char_params.p_presentation_format = &char_uint8_pf;
