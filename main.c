@@ -82,7 +82,7 @@
 
 #include "estc_service.h"
 
-#define DEVICE_NAME                     "ESTC-GATT"                             /**< Name of device. Will be included in the advertising data. */
+#define DEVICE_NAME                     "ESTC-Mosolov"                             /**< Name of device. Will be included in the advertising data. */
 #define MANUFACTURER_NAME               "NordicSemiconductor"                   /**< Manufacturer. Will be passed to Device Information Service. */
 #define APP_ADV_INTERVAL                300                                     /**< The advertising interval (in units of 0.625 ms. This value corresponds to 187.5 ms). */
 
@@ -99,7 +99,7 @@
 #define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(30000)                  /**< Time between each call to sd_ble_gap_conn_param_update after the first call (30 seconds). */
 #define MAX_CONN_PARAMS_UPDATE_COUNT    3                                       /**< Number of attempts before giving up the connection parameter negotiation. */
 
-#define NOTIFICATION_TIMER_DELAY 3000
+#define NOTIFICATION_TIMER_DELAY 8000
 #define INDICATION_TIMER_DELAY 6000
 
 #define DEAD_BEEF                       0xDEADBEEF                              /**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
@@ -112,6 +112,8 @@ APP_TIMER_DEF(notification_timer_repeat);
 APP_TIMER_DEF(indication_timer_repeat);
 
 static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                        /**< Handle of the current connection. */
+
+
 
 static ble_uuid_t m_adv_uuids[] =                                               /**< Universally unique service identifiers. */
 {
@@ -165,13 +167,33 @@ static void timers_init(void)
 
 void notification_timer_handler(void *p_context)
 {
+   
+    estc_service.characteristic1_value++;
+    uint16_t len =sizeof(uint16_t);
+
+
     NRF_LOG_INFO("notification ");
+
+    ble_gatts_hvx_params_t hvx_params = {0};
+    hvx_params.handle = estc_service.characteristic1_handle.value_handle;
+    hvx_params.type = BLE_GATT_HVX_NOTIFICATION;
+    hvx_params.p_len = &len;
+    hvx_params.p_data = (uint8_t *)&estc_service.characteristic1_value;
+    sd_ble_gatts_hvx(estc_service.connection_handle,&hvx_params);
 
 }
 
 void indication_timer_handler(void *p_context)
 {
     NRF_LOG_INFO("indication ");
+    estc_service.characteristic2_value++;
+    uint16_t len = sizeof(uint8_t);
+    ble_gatts_hvx_params_t hvx_params = {0};
+    hvx_params.handle = estc_service.characteristic2_handle.value_handle;
+    hvx_params.type = BLE_GATT_HVX_INDICATION;
+    hvx_params.p_len = &len;
+    hvx_params.p_data =&estc_service.characteristic2_value;
+    sd_ble_gatts_hvx(estc_service.connection_handle,&hvx_params);
 
 }
 

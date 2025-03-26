@@ -54,10 +54,13 @@ typedef struct
     uint16_t connection_handle;
     ble_gatts_char_handles_t characteristic1_handle;
     ble_gatts_char_handles_t characteristic2_handle;
+    uint16_t  characteristic1_value;
+    uint8_t  characteristic2_value;
 
     
 } ble_estc_service_t;
 
+extern ble_estc_service_t estc_service;
 
 
 ret_code_t estc_ble_service_init(ble_estc_service_t *service);

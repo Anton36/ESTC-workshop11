@@ -39,7 +39,7 @@
 
 static ret_code_t estc_ble_add_characteristics(ble_estc_service_t *service);
 
-ble_estc_service_t estc_service;
+ble_estc_service_t estc_service = {0};
 
 ret_code_t estc_ble_service_init(ble_estc_service_t *service)
 {
@@ -109,6 +109,8 @@ static ret_code_t estc_ble_add_characteristics(ble_estc_service_t *service)
     add_char_params.uuid_type = characteristic1_uuid.type;
     add_char_params.max_len = sizeof(uint16_t);
     add_char_params.init_len = sizeof(uint16_t);
+    add_char_params.char_props.read = 1;
+    add_char_params.char_props.write = 1;
     add_char_params.char_props.notify = 1;
     add_char_params.cccd_write_access = SEC_OPEN;
     add_char_params.p_user_descr = &add_char_user_desc;
@@ -134,6 +136,8 @@ static ret_code_t estc_ble_add_characteristics(ble_estc_service_t *service)
     add_char_params.uuid_type = characteristic2_uuid.type;
     add_char_params.max_len = sizeof(uint8_t);
     add_char_params.init_len = sizeof(uint8_t);
+    add_char_params.char_props.read = 1;
+    add_char_params.char_props.write = 1;
     add_char_params.char_props.indicate = 1;
     add_char_params.cccd_write_access = SEC_OPEN;
     add_char_params.p_user_descr = &add_char_user_desc;
