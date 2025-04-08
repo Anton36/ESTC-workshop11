@@ -26,7 +26,7 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
  * WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE
-*/
+ */
 
 #ifndef ESTC_SERVICE_H__
 #define ESTC_SERVICE_H__
@@ -37,39 +37,30 @@
 #include "ble.h"
 #include "sdk_errors.h"
 
-#define ESTC_BASE_UUID { 0x1e, 0x5f, 0x00, 0x00, 0xa8, 0x9c, 0x46, 0x7d,0xa1, 0x73, 0xe9, 0x74, 0x63, 0xea, 0xaf, 0x6d } // UUID: 1e5fxxxx-a89c-467d-a173-e97463eaaf6d
+#define ESTC_BASE_UUID {0x1e, 0x5f, 0x00, 0x00, 0xa8, 0x9c, 0x46, 0x7d, 0xa1, 0x73, 0xe9, 0x74, 0x63, 0xea, 0xaf, 0x6d} // UUID: 1e5fxxxx-a89c-467d-a173-e97463eaaf6d
 
 #define ESTC_SERVICE_UUID 0x3000
 
-#define ESTC_GATT_CHAR_1_UUID 0x3001
+#define ESTC_GATT_CHAR_RGB_UUID 0x3001
 
-#define ESTC_GATT_CHAR_2_UUID 0x3002
-
-
-
-
+#define ESTC_GATT_CHAR_LED_STATUS_UUID 0x3002
 
 typedef struct
 {
     uint16_t service_handle;
     uint16_t connection_handle;
-    ble_gatts_char_handles_t characteristic1_handle;
-    ble_gatts_char_handles_t characteristic2_handle;
-    uint16_t  characteristic1_value;
-    uint8_t  characteristic2_value;
-    bool is_notification_enabled;
-    bool is_indication_enabled;
+    ble_gatts_char_handles_t characteristic_RGB_handle;
+    ble_gatts_char_handles_t characteristic_LED_status_handle;
+    bool is_notification_for_RGB_char_enabled;
+    bool is_notification_for_LED_state_char_enabled;
 
-    
 } ble_estc_service_t;
 
 extern ble_estc_service_t estc_service;
-
 
 ret_code_t estc_ble_service_init(ble_estc_service_t *service);
 
 void estc_ble_service_on_ble_event(const ble_evt_t *ble_evt, void *ctx);
 
-void estc_update_characteristic_1_value(ble_estc_service_t *service, int32_t *value);
 
 #endif /* ESTC_SERVICE_H__ */

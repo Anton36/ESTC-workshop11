@@ -1,42 +1,4 @@
-/**
- * Copyright (c) 2014 - 2021, Nordic Semiconductor ASA
- *
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice, this
- *    list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form, except as embedded into a Nordic
- *    Semiconductor ASA integrated circuit in a product or a software update for
- *    such product, must reproduce the above copyright notice, this list of
- *    conditions and the following disclaimer in the documentation and/or other
- *    materials provided with the distribution.
- *
- * 3. Neither the name of Nordic Semiconductor ASA nor the names of its
- *    contributors may be used to endorse or promote products derived from this
- *    software without specific prior written permission.
- *
- * 4. This software, with or without modification, must only be used with a
- *    Nordic Semiconductor ASA integrated circuit.
- *
- * 5. Any software provided in binary form under this license must not be reverse
- *    engineered, decompiled, modified and/or disassembled.
- *
- * THIS SOFTWARE IS PROVIDED BY NORDIC SEMICONDUCTOR ASA "AS IS" AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY, NONINFRINGEMENT, AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NORDIC SEMICONDUCTOR ASA OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
- * GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
- * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- */
+
 /** @file
  *
  * @defgroup estc_gatt main.c
@@ -81,6 +43,10 @@
 #include "nrf_log_backend_usb.h"
 
 #include "estc_service.h"
+#include "led_handler.h"
+#include "pwm_handler.h"
+#include "memory_handler.h"
+
 
 #define DEVICE_NAME "ESTC-Mosolov"              /**< Name of device. Will be included in the advertising data. */
 #define MANUFACTURER_NAME "NordicSemiconductor" /**< Manufacturer. Will be passed to Device Information Service. */
@@ -99,17 +65,13 @@
 #define NEXT_CONN_PARAMS_UPDATE_DELAY APP_TIMER_TICKS(30000) /**< Time between each call to sd_ble_gap_conn_param_update after the first call (30 seconds). */
 #define MAX_CONN_PARAMS_UPDATE_COUNT 3                       /**< Number of attempts before giving up the connection parameter negotiation. */
 
-#define NOTIFICATION_TIMER_DELAY 8000
-#define INDICATION_TIMER_DELAY 6000
+
 
 #define DEAD_BEEF 0xDEADBEEF /**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
 
 NRF_BLE_GATT_DEF(m_gatt);           /**< GATT module instance. */
 NRF_BLE_QWR_DEF(m_qwr);             /**< Context for the Queued Write module.*/
 BLE_ADVERTISING_DEF(m_advertising); /**< Advertising module instance. */
-
-APP_TIMER_DEF(notification_timer_repeat);
-APP_TIMER_DEF(indication_timer_repeat);
 
 static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID; /**< Handle of the current connection. */
 
@@ -122,9 +84,8 @@ static ble_uuid_t m_adv_uuids[] = /**< Universally unique service identifiers. *
 ble_estc_service_t m_estc_service; /**< ESTC example BLE service */
 
 static void advertising_start(void);
-
-void notification_timer_handler(void *p_context);
-void indication_timer_handler(void *p_context);
+static void notification_for_RGB_char(void);
+static void notification_for_RGB_char(void);
 
 /**@brief Callback function for asserts in the SoftDevice.
  *
@@ -151,47 +112,38 @@ static void timers_init(void)
     // Initialize timer module.
     ret_code_t err_code = app_timer_init();
     APP_ERROR_CHECK(err_code);
-
-    app_timer_create(&notification_timer_repeat,
-                     APP_TIMER_MODE_REPEATED,
-                     notification_timer_handler);
-    app_timer_create(&indication_timer_repeat,
-                     APP_TIMER_MODE_REPEATED,
-                     indication_timer_handler);
 }
 
-void notification_timer_handler(void *p_context)
+static void notification_for_RGB_char()
 {
-    NRF_LOG_INFO("notification timer work ");
+    NRF_LOG_INFO("notification for rgb_state");
+    uint16_t len = (3 * sizeof(uint8_t));
+    uint8_t rgb_value[3] = {0};
+    rgb_value[0] = rgb_led_state.red;
+    rgb_value[1] = rgb_led_state.green;
+    rgb_value[2] = rgb_led_state.blue;
 
-        estc_service.characteristic1_value++;
-        uint16_t len = sizeof(uint16_t);
+    ble_gatts_hvx_params_t hvx_params = {0};
+    hvx_params.handle = estc_service.characteristic_RGB_handle.value_handle;
+    hvx_params.type = BLE_GATT_HVX_NOTIFICATION;
+    hvx_params.p_len = &len;
+    hvx_params.p_data = rgb_value;
+    sd_ble_gatts_hvx(estc_service.connection_handle, &hvx_params);
 
-        NRF_LOG_INFO("notification ");
-
-        ble_gatts_hvx_params_t hvx_params = {0};
-        hvx_params.handle = estc_service.characteristic1_handle.value_handle;
-        hvx_params.type = BLE_GATT_HVX_NOTIFICATION;
-        hvx_params.p_len = &len;
-        hvx_params.p_data = (uint8_t *)&estc_service.characteristic1_value;
-        sd_ble_gatts_hvx(estc_service.connection_handle, &hvx_params);
-    
+   
 }
 
-void indication_timer_handler(void *p_context)
+static void notification_for_LED_state_char()
 {
-    NRF_LOG_INFO("indication timer work ");
+    NRF_LOG_INFO("notification for led_state");
+    uint16_t len = sizeof(bool);
 
-        NRF_LOG_INFO("indication ");
-        estc_service.characteristic2_value++;
-        uint16_t len = sizeof(uint8_t);
-        ble_gatts_hvx_params_t hvx_params = {0};
-        hvx_params.handle = estc_service.characteristic2_handle.value_handle;
-        hvx_params.type = BLE_GATT_HVX_INDICATION;
-        hvx_params.p_len = &len;
-        hvx_params.p_data = &estc_service.characteristic2_value;
-        sd_ble_gatts_hvx(estc_service.connection_handle, &hvx_params);
-    
+    ble_gatts_hvx_params_t hvx_params = {0};
+    hvx_params.handle = estc_service.characteristic_LED_status_handle.value_handle;
+    hvx_params.type = BLE_GATT_HVX_NOTIFICATION;
+    hvx_params.p_len = &len;
+    hvx_params.p_data = (uint8_t *)&rgb_led_state.is_led_on;
+    sd_ble_gatts_hvx(estc_service.connection_handle, &hvx_params);
 }
 
 /**@brief Function for the GAP initialization.
@@ -319,9 +271,6 @@ static void conn_params_init(void)
  */
 static void application_timers_start(void)
 {
-    
-
-    
 }
 
 /**@brief Function for putting the chip into sleep mode.
@@ -431,34 +380,56 @@ static void ble_evt_handler(ble_evt_t const *p_ble_evt, void *p_context)
     {
         const ble_gatts_evt_write_t *write = &p_ble_evt->evt.gatts_evt.params.write;
 
-        if (write->handle == estc_service.characteristic1_handle.cccd_handle)
+        if (write->handle == estc_service.characteristic_RGB_handle.cccd_handle)
         {
             uint16_t cccd_value = write->data[0] | (write->data[1] << 8);
-            estc_service.is_notification_enabled = (cccd_value & BLE_GATT_HVX_NOTIFICATION);
-            if (estc_service.is_notification_enabled == true)
-            {
-                app_timer_start(notification_timer_repeat, APP_TIMER_TICKS(NOTIFICATION_TIMER_DELAY), NULL);
-            }
-            else 
-            {
-                app_timer_stop(notification_timer_repeat);
-            }
-
-
+            estc_service.is_notification_for_RGB_char_enabled = (cccd_value & BLE_GATT_HVX_NOTIFICATION);
+            NRF_LOG_INFO("notification status for RGB_char is %d", estc_service.is_notification_for_RGB_char_enabled);
+            
         }
-        else if (write->handle == estc_service.characteristic2_handle.cccd_handle)
+        else if (write->handle == estc_service.characteristic_LED_status_handle.cccd_handle)
         {
             uint16_t cccd_value = write->data[0] | (write->data[1] << 8);
-            estc_service.is_indication_enabled = (cccd_value & BLE_GATT_HVX_INDICATION);
-            if (estc_service.is_indication_enabled == true)
+            estc_service.is_notification_for_LED_state_char_enabled = (cccd_value & BLE_GATT_HVX_NOTIFICATION);
+            NRF_LOG_INFO("notification status for LED_state_char is %d", estc_service.is_notification_for_LED_state_char_enabled);
+        }
+        else if (write->handle == estc_service.characteristic_RGB_handle.value_handle)
+        {
+
+            uint8_t r = write->data[0];
+            uint8_t g = write->data[1];
+            uint8_t b = write->data[2];
+
+            NRF_LOG_INFO("RGB: R=%d, G=%d, B=%d", r, g, b);
+            rgb_led_state.red = r;
+            rgb_led_state.green = g;
+            rgb_led_state.blue = b;
+            display_current_color();
+            if (estc_service.is_notification_for_RGB_char_enabled == true)
             {
-                app_timer_start(indication_timer_repeat, APP_TIMER_TICKS(INDICATION_TIMER_DELAY), NULL);
+                notification_for_RGB_char();
+                
+                
             }
-            else 
+            fds_write_data();
+        }
+        else if (write->handle == estc_service.characteristic_LED_status_handle.value_handle)
+        {
+            bool led_status = write->data[0];
+
+            NRF_LOG_INFO("led status is %d", led_status);
+            if (led_status == 0 || led_status == 1)
             {
-                app_timer_stop(indication_timer_repeat);
+                rgb_led_state.is_led_on = led_status;
+                pwm_playback();
+                if (estc_service.is_notification_for_LED_state_char_enabled == true)
+                {
+                    notification_for_LED_state_char();
+                }
+                fds_write_data();
             }
         }
+
         break;
     }
 
@@ -609,14 +580,20 @@ int main(void)
     // Initialize.
     log_init();
     timers_init();
+    led_init();
     buttons_leds_init();
     power_management_init();
+    estc_fds_init();
+    fds_read_data();
+    pwm_init();
+    pwm_playback();
     ble_stack_init();
     gap_params_init();
     gatt_init();
     services_init();
     advertising_init();
     conn_params_init();
+
 
     // Start execution.
     NRF_LOG_INFO("ESTC GATT server example started");
