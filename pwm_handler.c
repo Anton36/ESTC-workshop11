@@ -7,8 +7,6 @@
 #include <stdint.h>
 #include "app_timer.h"
 
-
-
 static nrfx_pwm_t pwm = NRFX_PWM_INSTANCE(0);
 
 static nrf_pwm_values_individual_t pwm_values;
@@ -49,11 +47,11 @@ void pwm_playback()
             display_current_color();
         }
     }
-    else 
+    else
     {
         if (!nrfx_pwm_is_stopped(&pwm))
         {
-            nrfx_pwm_stop(&pwm,false);
+            nrfx_pwm_stop(&pwm, false);
         }
     }
 }

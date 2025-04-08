@@ -1,5 +1,5 @@
 
-
+#include "memory_handler.h"
 #include "led_handler.h"
 #include "nrf_log.h"
 #include "pwm_handler.h"
@@ -7,10 +7,8 @@
 #include <stdint.h>
 #include "fds.h"
 
-#define FILE_ID 0x0010      /* The ID of the file to write the records into. */
+#define FILE_ID 0x0010    /* The ID of the file to write the records into. */
 #define RECORD_KEY 0x1101 /* A key for the first record. */
-
-
 
 static void fds_evt_handler(fds_evt_t const *p_fds_evt)
 {
@@ -22,13 +20,18 @@ static void fds_evt_handler(fds_evt_t const *p_fds_evt)
             // Initialization failed.
         }
         break;
+    case FDS_EVT_GC:
+        NRF_LOG_INFO("Garbage collection complete");
+        fds_get_stats();
+        break;
+
     default:
         break;
     }
 }
 void estc_fds_init()
 {
-    
+
     ret_code_t ret = fds_register(fds_evt_handler);
 
     ret = fds_init();
@@ -37,9 +40,30 @@ void estc_fds_init()
         rgb_led_state.is_led_on = true;
     }
 }
+void fds_garbage_collector(void)
+{
+    NRF_LOG_INFO("starting garbage collector ")
+    ret_code_t ret = fds_gc();
+    if (ret != NRF_SUCCESS)
+    {
+        NRF_LOG_INFO("garbage collector Initialization failed")
+    }
+}
 
-
-
+void fds_get_stats(void)
+{
+    fds_stat_t stat = {0};
+    fds_stat(&stat);
+    NRF_LOG_INFO("Found %d valid records", stat.valid_records);
+    NRF_LOG_INFO("Found %d  records ready to be garbage collected", stat.dirty_records);
+    NRF_LOG_INFO("Found %d  freeable words", stat.freeable_words);
+    NRF_LOG_INFO("Found %d  pages available", stat.pages_available);
+    NRF_LOG_INFO("%d  words is used", stat.words_used);
+    if (stat.freeable_words > (FDS_VIRTUAL_PAGE_SIZE * 0.9))
+    {
+        fds_garbage_collector();
+    }
+}
 
 void fds_write_data(void)
 {
@@ -68,7 +92,8 @@ void fds_write_data(void)
         NRF_LOG_INFO("RGB: R=%d, G=%d, B=%d", rgb_led_state.red, rgb_led_state.green, rgb_led_state.blue);
         NRF_LOG_INFO("led state=%d", rgb_led_state.is_led_on);
     }
-   
+
+    fds_get_stats();
 
     if (rc != NRF_SUCCESS)
     {
@@ -83,7 +108,7 @@ void fds_read_data(void)
     /* It is required to zero the token before first use. */
     memset(&ftok, 0, sizeof(fds_find_token_t));
     NRF_LOG_INFO("entering read memory zone")
-  
+
     if (fds_record_find(FILE_ID, RECORD_KEY, &record_desc, &ftok) == NRF_SUCCESS)
     {
         NRF_LOG_INFO("data find")
@@ -95,7 +120,6 @@ void fds_read_data(void)
             NRF_LOG_INFO("led parametrs have been read from memory")
             NRF_LOG_INFO("RGB: R=%d, G=%d, B=%d", rgb_led_state.red, rgb_led_state.green, rgb_led_state.blue);
             NRF_LOG_INFO("led state=%d", rgb_led_state.is_led_on);
-
         }
 
         if (fds_record_close(&record_desc) != NRF_SUCCESS)
