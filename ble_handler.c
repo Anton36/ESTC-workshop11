@@ -318,11 +318,12 @@ void ble_evt_handler(ble_evt_t const *p_ble_evt, void *p_context)
         }
         else if (write->handle == estc_service.characteristic_RGB_handle.value_handle)
         {
-            rgb_value_update(*write);
+
+            rgb_value_update(write);
         }
         else if (write->handle == estc_service.characteristic_LED_status_handle.value_handle)
         {
-            led_state_value_update(*write);
+            led_state_value_update(write);
         }
 
         break;
@@ -333,12 +334,13 @@ void ble_evt_handler(ble_evt_t const *p_ble_evt, void *p_context)
         break;
     }
 }
-void rgb_value_update(const ble_gatts_evt_write_t write)
+
+void rgb_value_update( const ble_gatts_evt_write_t *write)
 {
 
-    rgb_led_state.red = write.data[0];
-    rgb_led_state.green = write.data[1];
-    rgb_led_state.blue = write.data[2];
+    rgb_led_state.red = write->data[0];
+    rgb_led_state.green = write->data[1];
+    rgb_led_state.blue = write->data[2];
     NRF_LOG_INFO("RGB: R=%d, G=%d, B=%d", rgb_led_state.red, rgb_led_state.green, rgb_led_state.blue);
     display_current_color();
     if (estc_service.is_notification_for_RGB_char_enabled == true)
@@ -348,7 +350,7 @@ void rgb_value_update(const ble_gatts_evt_write_t write)
     fds_write_data();
 }
 
-void led_state_value_update(const ble_gatts_evt_write_t write)
+void led_state_value_update(const ble_gatts_evt_write_t *write)
 {
     bool led_status = write.data[0];
 

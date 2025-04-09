@@ -38,8 +38,8 @@
  void bsp_event_handler(bsp_event_t event);
  void advertising_init(void);
 
- void rgb_value_update(const ble_gatts_evt_write_t write);
- void led_state_value_update(const ble_gatts_evt_write_t write);
+ void rgb_value_update( const ble_gatts_evt_write_t *write);
+ void led_state_value_update(const ble_gatts_evt_write_t *write);
  void peer_manager_init(bool erase_bonds);
 
 

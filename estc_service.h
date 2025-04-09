@@ -49,6 +49,7 @@ typedef struct
 {
     uint16_t service_handle;
     uint16_t connection_handle;
+    uint8_t uuid_type;
     ble_gatts_char_handles_t characteristic_RGB_handle;
     ble_gatts_char_handles_t characteristic_LED_status_handle;
     bool is_notification_for_RGB_char_enabled;
